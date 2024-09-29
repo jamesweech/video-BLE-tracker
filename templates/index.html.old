@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLE Tag States</title>
+    <!-- Import Tailwind CSS and daisyUI from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@1.14.0/dist/full.js"></script>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto py-8">
+        <h1 class="text-4xl font-bold text-center text-blue-600 mb-8">BLE Tag States</h1>
+
+        <div class="overflow-x-auto">
+            <table class="table w-full text-left border-collapse">
+                <thead>
+                    <tr>
+                        <th class="border-b-2 p-4">Device Name</th>
+                        <th class="border-b-2 p-4">Status</th>
+                        <th class="border-b-2 p-4">Last Status Change</th>
+                    </tr>
+                </thead>
+                <tbody id="tags-table" class="table-zebra">
+                    <!-- Data will be injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- JavaScript to fetch data from the server and auto-update the table -->
+    <script>
+        async function fetchTags() {
+            try {
+                const response = await fetch('/api/tags');
+                const tagStates = await response.json();
+                const tableBody = document.getElementById('tags-table');
+                tableBody.innerHTML = ''; // Clear existing data
+
+                let rowIndex = 0;
+                for (const [mac, data] of Object.entries(tagStates)) {
+                    const row = document.createElement('tr');
+                    const rowClass = rowIndex % 2 === 0 ? "bg-gray-100" : "bg-white"; // Zebra striping
+
+                    row.innerHTML = `
+                        <td class="border-b p-4 ${rowClass}">${mac} (${data.name})</td>
+                        <td class="border-b p-4 ${rowClass}">
+                            <div class="tooltip" data-tip="${data.in_range ? 'Tag is near' : 'Tag is away'}">
+                                <span class="badge ${data.in_range ? 'badge-success' : 'badge-error'}">
+                                    ${data.in_range ? 'In Range' : 'Out of Range'}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="border-b p-4 ${rowClass}">${data.last_status_change}</td>
+                    `;
+                    tableBody.appendChild(row);
+                    rowIndex++;
+                }
+            } catch (error) {
+                console.error('Error fetching tag data:', error);
+            }
+        }
+
+        // Poll the server every 5 seconds
+        setInterval(fetchTags, 5000);
+
+        // Fetch data immediately when the page loads
+        fetchTags();
+    </script>
+</body>
+</html>
